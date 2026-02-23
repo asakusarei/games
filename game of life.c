@@ -3,19 +3,20 @@
 #include <time.h>
 #include <conio.h>
 #include <windows.h>
+#include <stdbool.h>
 
-#define WIDTH 10
-#define HEIGHT 10
+#define WIDTH 100
+#define HEIGHT 40
 
 char** make_field()
 {
-	char** field = malloc(sizeof(char*) * WIDTH);
+	char** field = malloc(sizeof(char*) * HEIGHT);
 	
-	for (int i = 0; i < WIDTH; i++)
+	for (int i = 0; i < HEIGHT; i++)
 	{
-		field[i] = malloc(sizeof(char) * HEIGHT);
+		field[i] = malloc(sizeof(char) * WIDTH);
 		
-		for (int j = 0; j < HEIGHT; j++)
+		for (int j = 0; j < WIDTH; j++)
 		{
 			field[i][j] = ' ';
 		}
@@ -26,14 +27,10 @@ char** make_field()
 
 char** fill_field(char** field)
 {
-	srand(time(NULL));
-	
-	for (int i = 0; i < WIDTH; i++)
+	for (int i = 0; i < HEIGHT; i++)
 	{
-		for (int j = 0; j < HEIGHT; j++)
+		for (int j = 0; j < WIDTH; j++)
 		{
-			int r = rand() % WIDTH;
-			
 			if (rand() % 2)
 			{
 				field[i][j] = '*';
@@ -50,7 +47,7 @@ char** fill_field(char** field)
 
 void free_memory(char** field)
 {
-	for (int i = 0; i < WIDTH; i++)
+	for (int i = 0; i < HEIGHT; i++)
 	{
 		free(field[i]);
 	}
@@ -59,21 +56,22 @@ void free_memory(char** field)
 
 char** update_generation(char** current_gen)
 {
-	char** new_gen = malloc(sizeof(char*) * WIDTH);
+	char** new_gen = malloc(sizeof(char*) * HEIGHT);
 	int neighbor_count = 0;
 	
-	for (int i = 0; i < WIDTH; i++)
+	for (int i = 0; i < HEIGHT; i++)
 	{
-		new_gen[i] = malloc(sizeof(char) * HEIGHT);
-		for (int j = 0; j < HEIGHT; j++)
+		new_gen[i] = malloc(sizeof(char) * WIDTH);
+		
+		for (int j = 0; j < WIDTH; j++)
 		{
-			if (j + 1 < HEIGHT && current_gen[i][j+1] == '*') {neighbor_count++;}
+			if (j + 1 < WIDTH && current_gen[i][j+1] == '*') {neighbor_count++;}
 			if (j - 1 >= 0 && current_gen[i][j-1] == '*') {neighbor_count++;}
-			if (i + 1 < WIDTH && current_gen[i+1][j] == '*') {neighbor_count++;}
+			if (i + 1 < HEIGHT && current_gen[i+1][j] == '*') {neighbor_count++;}
 			if (i - 1 >= 0 && current_gen[i-1][j] == '*') {neighbor_count++;}
-			if (i + 1 < WIDTH && j + 1 < HEIGHT && current_gen[i+1][j+1] == '*') {neighbor_count++;}
-			if (i - 1 >= 0 && j + 1 < HEIGHT && current_gen[i-1][j+1] == '*') {neighbor_count++;}
-			if (i + 1 < WIDTH && j - 1 >= 0 && current_gen[i+1][j-1] == '*') {neighbor_count++;}
+			if (i + 1 < HEIGHT && j + 1 < WIDTH && current_gen[i+1][j+1] == '*') {neighbor_count++;}
+			if (i - 1 >= 0 && j + 1 < WIDTH && current_gen[i-1][j+1] == '*') {neighbor_count++;}
+			if (i + 1 < HEIGHT && j - 1 >= 0 && current_gen[i+1][j-1] == '*') {neighbor_count++;}
 			if (i - 1 >= 0 && j - 1 >= 0 && current_gen[i-1][j-1] == '*') {neighbor_count++;}
 			
 			if (current_gen[i][j] == ' ' && neighbor_count == 3) {new_gen[i][j] = '*';}
@@ -83,44 +81,85 @@ char** update_generation(char** current_gen)
 		}
 	}
 	free_memory(current_gen);
+	
 	return new_gen;
 }
 
+
+
 void print_field(char** current_gen)
 {
-	for (int i = 0; i < WIDTH; i++)
+	for (int i = 0; i < WIDTH + 2; i++) {printf("#");}
+	printf("\n");
+	
+	for (int i = 0; i < HEIGHT; i++)
 	{
-		printf("[");
-		for (int j = 0; j < HEIGHT; j++)
+		printf("#");
+		for (int j = 0; j < WIDTH; j++)
 		{
-			if (j == 0)
-			{
-				printf("|%c|", current_gen[i][j]);
-			}
-			else
-			{
-				printf("%c|", current_gen[i][j]);
-			}
+			printf("%c", current_gen[i][j]);
 		}
-		printf("]\n");
+		printf("#\n");
 	}
+	
+	for (int i = 0; i < WIDTH + 2; i++) {printf("#");}
+	
+	int unit_counter = 0;
+	
+	for (int i = 0; i < HEIGHT; i++)
+	{
+		for (int j = 0; j < WIDTH; j++)
+		{
+			if (current_gen[i][j] == '*') {unit_counter++;}
+		}
+	}
+	
+	printf("\nalive units: %d\n", unit_counter);
+	printf("\nX: %d; Y: %d", WIDTH, HEIGHT);
+	unit_counter = 0;
 }
-
-
 
 int main(void)
 {
+	srand(time(NULL));
 	char** current_gen = make_field();
 	current_gen = fill_field(current_gen);
+	bool status = true;
 	
 	do
 	{
-		system("cls");
-		print_field(current_gen);
-		printf("\n");
-		Sleep(1000);
-
-		current_gen = update_generation(current_gen);
+		if (status)
+		{
+			printf("\n\033[2J\033[H");
+			print_field(current_gen);
+			printf("\n");
+			Sleep(1000);
+			current_gen = update_generation(current_gen);
+		}
+		
+		if (_kbhit())
+		{
+			int ch = _getch();
+			
+			if (ch == 'p')
+			{
+				if (status)
+				{
+					printf("\n[PAUSED]\n");
+					status = false;
+				}
+				else {status = true;}
+			}
+			else if (ch == 'x')
+			{
+				printf("\nsainara~\n");
+				free_memory(current_gen);
+				
+				return 0;
+			}
+		
+		}
+		
 	}
 	while (1);
 	
