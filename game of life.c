@@ -85,9 +85,7 @@ char** update_generation(char** current_gen)
 	return new_gen;
 }
 
-
-
-void print_field(char** current_gen)
+void print_field(char** current_gen, struct timespec start, struct timespec current)
 {
 	for (int i = 0; i < WIDTH + 2; i++) {printf("#");}
 	printf("\n");
@@ -114,7 +112,12 @@ void print_field(char** current_gen)
 		}
 	}
 	
+	double elapsed = 
+		(current.tv_sec - start.tv_sec) + 
+		(current.tv_nsec - start.tv_nsec) / 1e9;
+	
 	printf("\nalive units: %d\n", unit_counter);
+	printf("\ntime ellapsed: %.2f\n", elapsed);
 	printf("\nX: %d; Y: %d", WIDTH, HEIGHT);
 	unit_counter = 0;
 }
@@ -125,13 +128,16 @@ int main(void)
 	char** current_gen = make_field();
 	current_gen = fill_field(current_gen);
 	bool status = true;
+	struct timespec start, current;
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	
 	do
 	{
 		if (status)
 		{
+			clock_gettime(CLOCK_MONOTONIC, &current);
 			printf("\n\033[2J\033[H");
-			print_field(current_gen);
+			print_field(current_gen, start, current);
 			printf("\n");
 			Sleep(1000);
 			current_gen = update_generation(current_gen);
