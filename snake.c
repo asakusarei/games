@@ -10,32 +10,24 @@
 
 int score;
 int time_elapsed;
-bool food_status = true;
+bool food_status = false;
 
 void clear_screen()
 {
 	printf("\n\033[H\033[J");
 }
 
-int *spawn_food()
-{
-	int *food_coordinates = malloc(sizeof(int) * 2);
-	int x_pos, y_pos;
-	
+void spawn_food(int *food_x, int *food_y)
+{	
 	do
 	{
-		x_pos = rand() % 10;
-		y_pos = rand() % 10;
+		*food_x = rand() % 10;
+		*food_y = rand() % 10;
 	}
-	while (x_pos > X-2 || x_pos == 0 || y_pos > Y-2 || y_pos == 0);
-	
-	food_coordinates[0] = x_pos;
-	food_coordinates[1] = y_pos;
-	
-	return food_coordinates;
+	while (*food_x > X-2 || *food_x == 0 || *food_y > Y-2 || *food_y == 0);
 }
 
-void draw_field(int x, int y, int food_x, int food_y)
+void draw_field(int x, int y, int *food_x, int *food_y)
 {
 	for (int i = 0; i < Y; i++)
 	{
@@ -44,13 +36,13 @@ void draw_field(int x, int y, int food_x, int food_y)
 			if (j == x && i == y)
 			{
 				printf("o");
-				if (j == x && j == food_x && i == y && i == food_y)
+				if (j == *food_x && i == *food_y)
 				{
 					score++;
 					food_status = false;
 				}
 			}
-			else if (j == food_x && i == food_y && food_status == true)
+			else if (j == *food_x && i == *food_y && food_status == true)
 			{
 					printf("*");
 			}
@@ -67,7 +59,7 @@ void draw_field(int x, int y, int food_x, int food_y)
 	}
 }
 
-int stat_screen(struct timespec start, struct timespec current)
+void stat_screen(struct timespec start, struct timespec current)
 {
 	double time_elapsed = 
 		(current.tv_sec - start.tv_sec) + 
@@ -87,9 +79,8 @@ int main(void)
 	int dx = 0;
 	int dy = 0;
 	
-	int *food_coordinates = spawn_food();
-	int food_x = food_coordinates[0];
-	int food_y = food_coordinates[1];
+	int food_x;
+	int food_y;
 	int iter_count = 0;
 	
 	struct timespec start, current;
@@ -154,17 +145,14 @@ int main(void)
 		
 		if (iter_count > FOOD_SPAWN_DELAY)
 		{
-			free(food_coordinates);
-			int *food_coordinates = spawn_food();
-			food_x = food_coordinates[0];
-			food_y = food_coordinates[1];
+			spawn_food(&food_x, &food_y);
 			food_status = true;
 			iter_count = 0;
 		}	
 		
 		iter_count++;
 		
-		draw_field(x, y, food_coordinates[0], food_coordinates[1]);
+		draw_field(x, y, &food_x, &food_y);
 		
 		clock_gettime(CLOCK_MONOTONIC, &current);
 		stat_screen(start, current);
